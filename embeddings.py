@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: #always False; initialized in warmup.py
+    import os, time
     from sentence_transformers import SentenceTransformer, util
-    from torch import topk
-    import time
-    embedder: SentenceTransformer 
+    import torch
+    model: SentenceTransformer 
 
 corpus = [
   "Llamas are members of the camelid family meaning they're pretty closely related to vicuñas and camels",
@@ -16,22 +16,37 @@ corpus = [
 
 queries = ["llama weight", "how long llamas live", "what llamas eat"]
 
-start_time = time.time()
-corpus_embeddings = embedder.encode(corpus, convert_to_tensor=True) 
-end_time = time.time()
-print(f"Time taken to encode the corpus: {end_time - start_time:.4f} seconds")
+f = open("data/t2_data", "r")
+pages = f.read().lower().split('===')
+f.close()
+filtered = [page for page in pages if len(page) <= 64]
+pages = [page for page in pages if len(page) > 64]
+# for f_page in filtered: print(f_page, '='*20)
+print('pages_num:',len(pages))
 
+corpus = pages
+queries = ['nell brother']
+
+# check if tensor exists
+if os.path.exists('data/t2_data.pt'):
+    corpus_embeddings = torch.load('data/t2_data.pt')
+else: # encode the corpus
+  start_time = time.time()
+  corpus_embeddings = model.encode(corpus, convert_to_tensor=True, show_progress_bar=True) 
+  end_time = time.time()
+  print(f"Time taken to encode the corpus: {end_time - start_time:.4f} seconds")
+  torch.save(corpus_embeddings, "data/t2_data.pt")
 
 # Find the closest 3 sentences of the corpus for each query sentence based on cosine similarity
-top_k = min(3, len(corpus))
+top_k = min(5, len(corpus))
 for query in queries:
-    query_embedding = embedder.encode(query, convert_to_tensor=True)
+    query_embedding = model.encode(query, convert_to_tensor=True)
 
     # We use cosine-similarity and torch.topk to find the highest 3 scores
     cos_scores = util.cos_sim(query_embedding, corpus_embeddings)[0]
-    top_results = topk(cos_scores, k=top_k)
+    top_results = torch.topk(cos_scores, k=top_k)
 
-    print('_'*16, query, '_'*16)
+    print('='*16, query, '='*16)
     for score, idx in zip(top_results[0], top_results[1]):
-        print(f"{score:.4f}__{corpus[idx]})")
+        print(f"{score:.4f}=={corpus[idx]}")
 

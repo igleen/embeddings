@@ -1,10 +1,13 @@
+print('loading...')
+
 import os, time, traceback
 
 from sentence_transformers import SentenceTransformer, util
-from torch import topk
+import torch
 
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
-embedder.encode(["warmup"], convert_to_tensor=True)
+# all-MiniLM-L12-v2 | all-MiniLM-L6-v2 | nomic-ai/nomic-embed-text-v1.5 | jinaai/jina-embeddings-v2-base-en
+model = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True)
+model.encode(["warmup"], convert_to_tensor=True)
 
 f_path = "embeddings.py"
 
